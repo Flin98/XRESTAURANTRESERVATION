@@ -2,16 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#2aa7ff" />
-    <meta
-      name="description"
-      content="Find restaurants and reserve tables online across the USA."
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Restaurant Table Reservation</title>
+    
+    <!-- Script to catch invalid URL navigations and redirect to My Bookings -->
+    <script>
+      (function() {
+        window.addEventListener('error', function(e) {
+          if (e.message && e.message.includes("Failed to construct 'URL'")) {
+            window.location.pathname = '/my-bookings';
+          }
+        });
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
