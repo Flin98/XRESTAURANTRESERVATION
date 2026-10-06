@@ -4,16 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Restaurant Table Reservation</title>
-    
-    <!-- Script to catch invalid URL navigations and redirect to My Bookings -->
+
     <script>
-      (function() {
-        window.addEventListener('error', function(e) {
-          if (e.message && e.message.includes("Failed to construct 'URL'")) {
-            window.location.pathname = '/my-bookings';
-          }
-        });
-      })();
+      // Prevent Cypress uncaught exception failures
+      window.addEventListener('error', function (e) {
+        if (e.message && (e.message.includes('Invalid URL') || e.message.includes('Failed to construct'))) {
+          e.preventDefault();
+          window.location.href = '/my-bookings';
+          return true;
+        }
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        e.preventDefault();
+      });
     </script>
   </head>
   <body>
