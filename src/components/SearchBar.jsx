@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStates, getCities } from '../api/api';
 
@@ -7,12 +7,18 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState(initialSelectedState);
   const [selectedCity, setSelectedCity] = useState(initialSelectedCity);
+  
+  const [isStateOpen, setIsStateOpen] = useState(false);
+  const [isCityOpen, setIsCityOpen] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
+
+  const stateRef = useRef(null);
+  const cityRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     getStates()
-      .then((data) => setStates(data))
+      .then((data) => setStates(data || []))
       .catch((err) => console.error("Error fetching states:", err));
   }, []);
 
@@ -21,11 +27,12 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
       setLoadingCities(true);
       getCities(selectedState)
         .then((data) => {
-          setCities(data);
+          setCities(data || []);
           setLoadingCities(false);
         })
         .catch((err) => {
           console.error("Error fetching cities:", err);
+          setCities([]);
           setLoadingCities(false);
         });
     } else {
@@ -33,6 +40,20 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
       setSelectedCity('');
     }
   }, [selectedState]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (stateRef.current && !stateRef.current.contains(e.target)) {
+        setIsStateOpen(false);
+      }
+      if (cityRef.current && !cityRef.current.contains(e.target)) {
+        setIsCityOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -47,47 +68,71 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
   return (
     <form className="search-form-card" onSubmit={handleSubmit}>
       <div className="search-inputs-wrapper">
-        {/* Exact requirement: div id="state" */}
-        <div id="state" className="dropdown-container">
-          <select
-            value={selectedState}
-            onChange={(e) => {
-              setSelectedState(e.target.value);
-              setSelectedCity('');
-            }}
-            required
-          >
-            <option value="">Select State</option>
-            {states.map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
+        
+        {/* Exact requirement: div#state containing clickable <li> items */}
+        <div 
+          id="state" 
+          ref={stateRef} 
+          className="custom-dropdown" 
+          onClick={() => setIsStateOpen(!isStateOpen)}
+        >
+          <div className="selected-value">
+            {selectedState || "Select State"}
+          </div>
+          {isStateOpen && (
+            <ul className="dropdown-menu">
+              {states.map((st) => (
+                <li
+                  key={st}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedState(st);
+                    setSelectedCity('');
+                    setIsStateOpen(false);
+                  }}
+                >
+                  {st}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* Exact requirement: div id="city" */}
-        <div id="city" className="dropdown-container">
-          <select
-            value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-            disabled={!selectedState || loadingCities}
-            required
-          >
-            <option value="">
-              {loadingCities ? 'Loading cities...' : 'Select City'}
-            </option>
-            {cities.map((ct) => (
-              <option key={ct} value={ct}>
-                {ct}
-              </option>
-            ))}
-          </select>
+        {/* Exact requirement: div#city containing clickable <li> items */}
+        <div 
+          id="city" 
+          ref={cityRef} 
+          className={`custom-dropdown ${(!selectedState || loadingCities) ? 'disabled' : ''}`}
+          onClick={() => {
+            if (selectedState && !loadingCities) {
+              setIsCityOpen(!isCityOpen);
+            }
+          }}
+        >
+          <div className="selected-value">
+            {loadingCities ? "Loading cities..." : (selectedCity || "Select City")}
+          </div>
+          {isCityOpen && (
+            <ul className="dropdown-menu">
+              {cities.map((ct) => (
+                <li
+                  key={ct}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCity(ct);
+                    setIsCityOpen(false);
+                  }}
+                >
+                  {ct}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* Exact requirement: type="submit", id="searchBtn", Text "Search" */}
+        {/* Exact requirement: button type="submit" id="searchBtn" labeled Search */}
         <button type="submit" id="searchBtn" className="btn-primary search-btn">
-          🔍 Search
+          Search
         </button>
       </div>
     </form>
