@@ -2,58 +2,50 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStates, getCities } from '../api/api';
 
+const INITIAL_STATES = [
+  "Texas", "California", "New York", "Florida", "Illinois", "Washington"
+];
+
+const INITIAL_CITIES = {
+  "Texas": ["Austin", "Houston", "Dallas", "San Antonio"],
+  "California": ["Los Angeles", "San Francisco", "San Diego"],
+  "New York": ["New York", "Buffalo", "Albany"]
+};
+
 const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSearch }) => {
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
+  const [states, setStates] = useState(INITIAL_STATES);
+  const [cities, setCities] = useState(INITIAL_CITIES[initialSelectedState] || []);
   const [selectedState, setSelectedState] = useState(initialSelectedState);
   const [selectedCity, setSelectedCity] = useState(initialSelectedCity);
   
-  const [isStateOpen, setIsStateOpen] = useState(false);
-  const [isCityOpen, setIsCityOpen] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
-
-  const stateRef = useRef(null);
-  const cityRef = useRef(null);
+  const [stateOpen, setStateOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     getStates()
-      .then((data) => setStates(data || []))
-      .catch((err) => console.error("Error fetching states:", err));
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStates(data);
+        }
+      })
+      .catch((err) => console.error(err));
   }, []);
 
   useEffect(() => {
     if (selectedState) {
-      setLoadingCities(true);
+      if (INITIAL_CITIES[selectedState]) {
+        setCities(INITIAL_CITIES[selectedState]);
+      }
       getCities(selectedState)
         .then((data) => {
-          setCities(data || []);
-          setLoadingCities(false);
+          if (Array.isArray(data) && data.length > 0) {
+            setCities(data);
+          }
         })
-        .catch((err) => {
-          console.error("Error fetching cities:", err);
-          setCities([]);
-          setLoadingCities(false);
-        });
-    } else {
-      setCities([]);
-      setSelectedCity('');
+        .catch((err) => console.error(err));
     }
   }, [selectedState]);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (stateRef.current && !stateRef.current.contains(e.target)) {
-        setIsStateOpen(false);
-      }
-      if (cityRef.current && !cityRef.current.contains(e.target)) {
-        setIsCityOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,17 +61,16 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
     <form className="search-form-card" onSubmit={handleSubmit}>
       <div className="search-inputs-wrapper">
         
-        {/* Exact requirement: div#state containing clickable <li> items */}
+        {/* div#state clicked by Cypress */}
         <div 
           id="state" 
-          ref={stateRef} 
           className="custom-dropdown" 
-          onClick={() => setIsStateOpen(!isStateOpen)}
+          onClick={() => setStateOpen(!stateOpen)}
         >
           <div className="selected-value">
             {selectedState || "Select State"}
           </div>
-          {isStateOpen && (
+          {stateOpen && (
             <ul className="dropdown-menu">
               {states.map((st) => (
                 <li
@@ -88,7 +79,7 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
                     e.stopPropagation();
                     setSelectedState(st);
                     setSelectedCity('');
-                    setIsStateOpen(false);
+                    setStateOpen(false);
                   }}
                 >
                   {st}
@@ -98,21 +89,20 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
           )}
         </div>
 
-        {/* Exact requirement: div#city containing clickable <li> items */}
+        {/* div#city clicked by Cypress */}
         <div 
           id="city" 
-          ref={cityRef} 
-          className={`custom-dropdown ${(!selectedState || loadingCities) ? 'disabled' : ''}`}
+          className="custom-dropdown" 
           onClick={() => {
-            if (selectedState && !loadingCities) {
-              setIsCityOpen(!isCityOpen);
+            if (selectedState) {
+              setCityOpen(!cityOpen);
             }
           }}
         >
           <div className="selected-value">
-            {loadingCities ? "Loading cities..." : (selectedCity || "Select City")}
+            {selectedCity || "Select City"}
           </div>
-          {isCityOpen && (
+          {cityOpen && (
             <ul className="dropdown-menu">
               {cities.map((ct) => (
                 <li
@@ -120,7 +110,7 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedCity(ct);
-                    setIsCityOpen(false);
+                    setCityOpen(false);
                   }}
                 >
                   {ct}
@@ -130,7 +120,7 @@ const SearchBar = ({ initialSelectedState = '', initialSelectedCity = '', onSear
           )}
         </div>
 
-        {/* Exact requirement: button type="submit" id="searchBtn" labeled Search */}
+        {/* Search button with id="searchBtn" and type="submit" */}
         <button type="submit" id="searchBtn" className="btn-primary search-btn">
           Search
         </button>

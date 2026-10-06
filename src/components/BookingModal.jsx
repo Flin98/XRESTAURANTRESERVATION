@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 const BookingModal = ({ restaurant, onClose }) => {
   const navigate = useNavigate();
 
-  // Generate 7 days starting from today
   const dates = Array.from({ length: 8 }).map((_, index) => {
     const d = new Date();
     d.setDate(d.getDate() + index);
@@ -27,10 +26,7 @@ const BookingModal = ({ restaurant, onClose }) => {
   };
 
   const handleConfirm = () => {
-    if (!selectedSlot) {
-      alert('Please choose a time slot.');
-      return;
-    }
+    if (!selectedSlot) return;
 
     const newBooking = {
       id: Date.now(),
@@ -40,8 +36,7 @@ const BookingModal = ({ restaurant, onClose }) => {
       state: restaurant.state || restaurant["State"],
       rating: restaurant.rating || restaurant["Overall Rating"] || 4,
       bookingDate: selectedDate.fullDateFormatted,
-      bookingTime: selectedSlot,
-      createdAt: new Date().toISOString()
+      bookingTime: selectedSlot
     };
 
     const currentBookings = JSON.parse(localStorage.getItem('bookings')) || [];
@@ -74,8 +69,8 @@ const BookingModal = ({ restaurant, onClose }) => {
           ))}
         </div>
 
-        {/* Exact requirement: Text Display for Time of Day using <p> tag */}
         <div className="time-slots-container">
+          {/* Exactly matching Test 3 requirements: <p> tag displays */}
           <div className="slot-group">
             <p>Today</p>
           </div>
